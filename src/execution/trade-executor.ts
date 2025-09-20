@@ -1,11 +1,13 @@
 /**
- * Simple trade executor using Cetus SDK
+ * Trade executor using Cetus SDK
  */
 
 import { SuiClient } from '@mysten/sui/client';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { Transaction } from '@mysten/sui/transactions';
 import { NetworkConfig, getNetworkConfig } from '../config/networks.js';
+import { initCetusSDK, adjustForSlippage, Percentage, d } from '@cetusprotocol/cetus-sui-clmm-sdk';
+import BN from 'bn.js';
 
 export interface SimpleRecommendation {
   id: number;
@@ -27,18 +29,27 @@ export interface ExecutionResult {
 
 export class SimpleTradeExecutor {
   private networkConfig: NetworkConfig;
+  public cetusSDK: any;
 
   constructor(
-    private suiClient: any, // Use any for now to avoid type conflicts
+    private suiClient: SuiClient,
     private keypair: Ed25519Keypair,
     networkConfig?: NetworkConfig
   ) {
     this.networkConfig = networkConfig || getNetworkConfig();
+
+    // Initialize Cetus SDK
+    const networkName = this.networkConfig.name === 'testnet' ? 'testnet' : 'mainnet';
+    this.cetusSDK = initCetusSDK({ network: networkName });
+    
+    // Set the sender address for the SDK
+    this.cetusSDK.senderAddress = this.keypair.toSuiAddress();
+    
     console.log(`🌐 Trade executor initialized for ${this.networkConfig.name} network`);
   }
 
   /**
-   * Execute a single recommendation using Cetus
+   * Execute a single recommendation using Cetus SDK
    */
   async executeRecommendation(
     recommendation: SimpleRecommendation,
@@ -52,39 +63,76 @@ export class SimpleTradeExecutor {
       console.log(`   Pool: ${recommendation.pool}`);
       console.log(`   Confidence: ${recommendation.confidence}`);
 
-      // Create transaction block
-      const txb = new Transaction();
+      // Get pool data using Cetus SDK
+      const pool = await this.cetusSDK.Pool.getPool(recommendation.pool);
+      if (!pool) {
+        throw new Error(`Pool ${recommendation.pool} not found`);
+      }
 
-      // Use network-specific Cetus package ID
-      const CETUS_PACKAGE_ID = this.networkConfig.cetusPackageId;
-      console.log(`📦 Using Cetus package: ${CETUS_PACKAGE_ID} (${this.networkConfig.name})`);
+      console.log(`📦 Using pool: ${pool.poolAddress} (${this.networkConfig.name})`);
 
-      // Calculate minimum amount out (with slippage protection)
-      const amountIn = BigInt(recommendation.amount);
-      const minAmountOut = this.calculateMinAmountOut(amountIn, maxSlippage);
+      // Determine swap direction (a2b or b2a)
+      const coinTypeA = pool.coinTypeA;
+      const coinTypeB = pool.coinTypeB;
+      const a2b = recommendation.tokenIn === coinTypeA;
 
-      // Add swap function call
-      // Note: This is a simplified version - real Cetus integration would need proper pool/coin types
-      const swapResult = txb.moveCall({
-        target: `${CETUS_PACKAGE_ID}::router::swap_exact_input`,
-        arguments: [
-          txb.object(recommendation.pool), // Pool object
-          txb.pure.u64(recommendation.amount), // Amount in
-          txb.pure.u64(minAmountOut.toString()), // Min amount out
-          txb.pure.bool(true), // A to B direction (simplified)
-        ],
-        typeArguments: [recommendation.tokenIn, recommendation.tokenOut],
+      console.log(`🔄 Swap direction: ${a2b ? 'A→B' : 'B→A'}`);
+      console.log(`   Coin A: ${coinTypeA}`);
+      console.log(`   Coin B: ${coinTypeB}`);
+      console.log(`   Token In: ${recommendation.tokenIn}`);
+      console.log(`   a2b: ${a2b}`);
+
+      // Get token decimals (assuming standard decimals for now)
+      const decimalsA = this.getTokenDecimals(coinTypeA);
+      const decimalsB = this.getTokenDecimals(coinTypeB);
+
+      // Pre-calculate swap using Cetus SDK with correct parameters
+      const preswapResult = await this.cetusSDK.Swap.preswap({
+        pool: pool,
+        currentSqrtPrice: pool.current_sqrt_price,
+        coinTypeA: pool.coinTypeA,
+        coinTypeB: pool.coinTypeB,
+        decimalsA: decimalsA,
+        decimalsB: decimalsB,
+        a2b: Boolean(a2b),
+        byAmountIn: true,
+        amount: recommendation.amount,
       });
 
-      // Set gas budget and sender
-      txb.setSender(this.keypair.toSuiAddress());
-      txb.setGasBudget(10000000); // 0.01 SUI
+      if (!preswapResult) {
+        throw new Error('Preswap calculation failed');
+      }
 
-      // Execute transaction
+      console.log(`📊 Preswap result:`);
+      console.log(`   Amount in: ${preswapResult.estimatedAmountIn}`);
+      console.log(`   Amount out: ${preswapResult.estimatedAmountOut}`);
+      console.log(`   After sqrt price: ${preswapResult.estimatedEndSqrtPrice}`);
+
+      // Calculate minimum amount out with slippage protection using SDK function
+      const slippage = Percentage.fromDecimal(d(maxSlippage));
+      const toAmount = new BN(preswapResult.estimatedAmountOut);
+      const amountLimit = adjustForSlippage(toAmount, slippage, false); // false because we're fixing input amount
+      
+      console.log(`🛡️ Min amount out (${maxSlippage * 100}% slippage): ${amountLimit.toString()}`);
+
+      // Create swap transaction using Cetus SDK
+      const swapPayload = await this.cetusSDK.Swap.createSwapTransactionPayload({
+        pool_id: recommendation.pool,
+        coinTypeA: pool.coinTypeA,
+        coinTypeB: pool.coinTypeB,
+        a2b: a2b,
+        by_amount_in: true,
+        amount: preswapResult.estimatedAmountIn,
+        amount_limit: amountLimit.toString(),
+      });
+
+      console.log(`📝 Swap payload created`);
+
+      // Execute the swap transaction
       console.log('📡 Submitting transaction...');
       const result = await this.suiClient.signAndExecuteTransaction({
         signer: this.keypair,
-        transaction: txb,
+        transaction: await swapPayload,
         options: {
           showEffects: true,
           showObjectChanges: true,
@@ -183,5 +231,25 @@ export class SimpleTradeExecutor {
     // Simplified gas estimation
     // Real implementation would use dryRun
     return '10000000'; // ~0.01 SUI
+  }
+
+  /**
+   * Get token decimals based on coin type
+   */
+  private getTokenDecimals(coinType: string): number {
+    // Standard token decimals mapping
+    const decimalsMap: { [key: string]: number } = {
+      '0x2::sui::SUI': 9,
+      '0x5d4b302506645c37ff133b98c4b50a5ae14841659738d6d733d59d0d217a93bf::coin::COIN': 9, // USDC
+      '0xaf8cd5edc19c4512f4259f0bee101a40d41ebd73820c7d13cfcda0cd0cf3e3e6::coin::COIN': 9, // USDT
+    };
+
+    // Check if it's a common token
+    if (decimalsMap[coinType]) {
+      return decimalsMap[coinType];
+    }
+
+    // Default to 9 decimals for most Sui tokens
+    return 9;
   }
 }
