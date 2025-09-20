@@ -2,6 +2,7 @@
   "name": "trader-soul",
   "version": "0.1.0",
   "description": "Personalized AI trading assistant for Sui blockchain",
+  "type": "module",
   "main": "dist/mcp/server.js",
   "scripts": {
     "dev:mcp": "ts-node src/mcp/server.ts",

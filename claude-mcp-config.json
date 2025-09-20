@@ -2,9 +2,12 @@
   "mcpServers": {
     "trader-soul": {
       "command": "node",
-      "args": ["dist/mcp/server.js"],
+      "args": ["/Users/swatipratyusha/Documents/official/ladder/Sui-mming 2025/aitrader/dist/mcp/server.js"],
       "cwd": "/Users/swatipratyusha/Documents/official/ladder/Sui-mming 2025/aitrader",
-      "env": {}
+      "env": {
+        "NODE_ENV": "production",
+        "DEMO_PRIVATE_KEY": "YOUR_PRIVATE_KEY_HERE"
+      }
     }
   }
 }
