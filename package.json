@@ -6,11 +6,18 @@
   "scripts": {
     "dev:mcp": "ts-node src/mcp/server.ts",
     "build": "tsc",
-    "mcp:serve": "node dist/mcp/server.js"
+    "mcp:serve": "node dist/mcp/server.js",
+    "test:walrus": "ts-node scripts/test-walrus-storage.ts",
+    "test:storage": "npm run test:walrus",
+    "generate:keypair": "ts-node scripts/generate-keypair.ts",
+    "check:network": "node scripts/check-network-config.js",
+    "list:networks": "node scripts/check-network-config.js list"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.18.1",
     "@mysten/sui.js": "^0.54.1",
+    "@mysten/walrus": "^0.7.0",
+    "dotenv": "^17.2.2",
     "node-fetch": "^3.3.2",
     "zod": "^3.25.76"
   },

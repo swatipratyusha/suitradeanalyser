@@ -1,192 +1,285 @@
-# Trader Soul - Personalized AI Trading Assistant for Sui
+# Sui Trading Analysis Platform
 
-*Built for Sui-mming Hackathon 2025*
+*Hackathon Project - Sui-mming 2025*
 
-## 🚀 Project Overview
+## Overview
 
-Trader Soul creates a personalized AI trading assistant that learns from your historical trading patterns on Sui and provides intelligent trade recommendations through Claude/GPT integration. Every wallet develops its own evolving "Trader Soul" - a persistent memory object that understands your trading style.
+An AI-powered personalised trading assistant that analyses Sui blockchain trading patterns, provides intelligent insights through persistent storage on Walrus, and executes trades automatically via Claude/GPT integration using Model Context Protocol (MCP).
 
-## 🎯 Key Features
+**Core Innovation**: An autonomous trading intelligence system that learns from historical data, maintains persistent memory through decentralised storage, and executes trades through natural language interaction.
 
-- **Memory Engine**: Learns your trading patterns from on-chain history (Cetus, Aftermath, Turbos)
-- **AI Integration**: Claude/GPT access via Model Context Protocol (MCP)
-- **Personalized Recommendations**: Trade suggestions based on your historical playbooks
-- **Sui-Native Storage**: Uses Walrus for data storage and Seal for encryption
-- **Pattern Recognition**: Discovers your trading styles (momentum, mean-reversion, risk preferences)
-- **Real-time Context**: Live market data from Pyth oracles and DEX APIs
+## Key Features
 
-## 🏗 Architecture
+### AI-Powered Pattern Analysis (current version uses statistical analyses but goal is ML models in the future)
+- Real-time analysis of Cetus DEX trading history (current support only for spot trades)
+- Trading personality discovery and behavioural pattern recognition
+- Token preference identification and trading consistency analysis
+- Historical pattern tracking with evolution analysis
+
+### Decentralised Storage Integration
+- Persistent analysis storage on Walrus network
+- Intelligent caching with change-based storage optimisation
+- Historical data access for long-term pattern tracking
+- Cost-effective storage with configurable retention policies
+
+### Natural Language Trading Interface
+- Five core MCP tools for comprehensive trading operations
+- Claude/GPT integration for conversational trading commands
+- Real-time pattern-based recommendation generation
+- Automated trade execution through natural language
+
+### Automated Trade Execution
+- Direct integration with Cetus DEX smart contracts
+- Configurable safety mechanisms and slippage protection (not yet implemented in this version since I used Cetus smart contracts directly - will configure custom Move smart contracts in next version with slippage protection, time sensitive executions and position sizing limits)
+- Multi-network support with seamless environment switching (testnet <-> mainnet)
+
+### Production-ready architecture
+- Multi-network configuration (testnet/mainnet/devnet/localnet)
+- Environment-aware deployment configuration
+- Comprehensive error handling and recovery
+
+## System Architecture
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   Claude/GPT    │◄──►│   MCP Provider   │◄──►│  Memory Engine  │
-│                 │    │                  │    │                 │
+│   Claude/GPT    │◄──►│   MCP Server     │◄──►│ Pattern Engine  │
+│  Natural Lang   │    │   5 Core Tools   │    │  AI Analysis    │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
                                 │                        │
                                 ▼                        ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                    Sui Blockchain Layer                        │
-├─────────────────┬─────────────────┬─────────────────────────────┤
-│  Trader Soul    │     Walrus      │         Pyth Oracle         │
-│    Objects      │   (Storage)     │      (Price Feeds)          │
-└─────────────────┴─────────────────┴─────────────────────────────┘
+│                     Walrus Storage Network                      │
+│  Persistent Analysis • Historical Data • Memory Management      │
+└─────────────────────────────────────────────────────────────────┘
                                 │
                                 ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│              DEX/Perps Data Sources                            │
-│          Cetus • Aftermath • Turbos                           │
+│                    Sui Blockchain Network                       │
+│  Live Swap Events • Cetus DEX • Trade Execution                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## 📁 Project Structure
+## Data Processing Flow
+
+1. **Real-time Data Collection**: Query Sui RPC endpoints for latest Cetus swap events
+2. **Pattern Analysis**: AI-driven statistical analysis and behavioural pattern recognition
+3. **Persistent Storage**: Intelligent caching on Walrus with deduplication optimisation
+4. **Service Integration**: MCP tools provide structured access to Claude/GPT
+5. **Natural Language Interface**: Conversational trading assistant capabilities
+6. **Trade Execution**: Automated transaction processing with safety verification
+
+## Project Structure
 
 ```
-trader-soul/
-├── README.md
-├── package.json
-├── .env.example
+aitrader/
 ├── src/
-│   ├── indexer/          # Sui event indexing & data collection
-│   │   ├── sui-client.ts
-│   │   ├── event-parser.ts
-│   │   └── protocols/
-│   │       ├── cetus.ts
-│   │       ├── aftermath.ts
-│   │       └── turbos.ts
-│   ├── memory/           # Trading pattern analysis & ML
-│   │   ├── pattern-detector.ts
-│   │   ├── playbook-extractor.ts
-│   │   ├── risk-profiler.ts
-│   │   └── embeddings.ts
-│   ├── storage/          # Walrus & Seal integration
-│   │   ├── walrus-client.ts
-│   │   ├── seal-client.ts
-│   │   └── trader-soul.ts
-│   ├── mcp/              # Model Context Protocol provider
-│   │   ├── server.ts
-│   │   ├── tools/
-│   │   │   ├── wallet-summary.ts
-│   │   │   ├── trade-history.ts
-│   │   │   ├── trade-memory.ts
-│   │   │   ├── market-snapshot.ts
-│   │   │   └── recommend-trades.ts
-│   │   └── schemas.ts
-│   ├── recommender/      # Trade recommendation engine
-│   │   ├── candidate-scanner.ts
-│   │   ├── pattern-matcher.ts
-│   │   ├── risk-manager.ts
-│   │   └── explanation-generator.ts
-│   ├── api/              # REST API endpoints
-│   │   ├── server.ts
-│   │   └── routes/
-│   └── web/              # Frontend interface
-│       ├── components/
-│       ├── pages/
-│       └── utils/
-├── contracts/            # Sui Move contracts
-│   ├── trader_soul/
-│   │   ├── Move.toml
-│   │   └── sources/
-│   │       └── trader_soul.move
-└── docs/
-    ├── API.md
-    ├── MCP-INTEGRATION.md
-    └── SETUP.md
+│   ├── config/
+│   │   └── networks.ts            # Multi-network configuration
+│   ├── sui/
+│   │   └── client.ts              # Sui RPC integration
+│   ├── analysis/
+│   │   ├── statistics.ts          # Mathematical analysis functions
+│   │   ├── token-utils.ts         # Token and pool analysis
+│   │   └── patterns.ts            # Trading pattern analyser
+│   ├── storage/
+│   │   ├── schema.ts              # Walrus storage schemas
+│   │   └── walrus-client.ts       # Walrus integration
+│   ├── execution/
+│   │   ├── types.ts               # Trade execution interfaces
+│   │   ├── safety-checker.ts      # Risk management
+│   │   └── trade-executor.ts      # Cetus DEX integration
+│   ├── mcp/
+│   │   ├── server.ts              # MCP server implementation
+│   │   └── tools/                 # Individual tool modules
+│   ├── memory/                    # Advanced memory systems
+│   └── recommender/               # AI recommendation engine
+├── scripts/
+│   ├── generate-keypair.js        # Keypair generation utility
+│   ├── test-walrus-storage.ts     # Storage integration testing
+│   └── check-network-config.js    # Network configuration validation
+├── docs/
+│   └── WALRUS_STORAGE.md          # Walrus integration documentation
+└── dist/                          # Compiled output
 ```
 
-## 🛠 Tech Stack
+## Technology Stack
 
-- **Blockchain**: Sui (Move smart contracts)
-- **Storage**: Walrus (data blobs), Seal (encryption)
-- **Oracles**: Pyth Network
-- **Backend**: Node.js/TypeScript
-- **ML**: TensorFlow.js / Simple statistical models
-- **MCP**: Model Context Protocol server
-- **Frontend**: Next.js/React
-- **Database**: PostgreSQL (for indexed data)
+**Core Infrastructure:**
+- Blockchain: Sui (multi-network support)
+- Storage: Walrus decentralised storage network
+- DEX Integration: Cetus CLMM protocol
+- Runtime: Node.js/TypeScript
+- AI Integration: Model Context Protocol
 
-## 🚀 Quick Start
+**Key Dependencies:**
+- `@modelcontextprotocol/sdk` - MCP server framework
+- `@mysten/sui.js` - Sui blockchain SDK
+- `@mysten/walrus` - Walrus storage SDK
+- `zod` - Runtime type validation
+
+## Quick Start
 
 ### Prerequisites
-
-- Node.js 18+
-- Sui CLI
-- PostgreSQL
-- Walrus CLI (for storage)
+- Node.js 18 or higher
+- Claude Desktop (Pro/Team/Enterprise subscription)
+- Sui wallet with testnet tokens
 
 ### Installation
 
 ```bash
-# Clone and setup
-git clone <repo-url>
-cd trader-soul
+git clone <repository-url>
+cd aitrader
 npm install
-
-# Setup environment
-cp .env.example .env
-# Fill in your Sui RPC, Walrus, and other API keys
-
-# Setup database
-npm run db:setup
-
-# Start development
-npm run dev
+npm run build
 ```
 
-### MCP Integration with Claude
+### Environment Configuration
 
 ```bash
-# Start MCP server
-npm run mcp:serve
+cp .env.example .env
+npm run generate:keypair
+# Add generated private key to .env file
+npm run check:network
+```
 
-# In Claude Desktop, add to config:
+### Token Requirements
+
+**For Testing:**
+- SUI tokens: 1-2 SUI for transaction fees
+- WAL tokens: 10-20 WAL for storage operations
+
+Request tokens from hackathon organisers or use official faucets.
+
+### Component Testing
+
+```bash
+# Test Walrus storage integration
+npm run test:walrus
+
+# Validate network configuration
+npm run list:networks
+
+# Start MCP server
+npm run dev:mcp
+```
+
+### Claude Desktop Integration
+
+Add configuration to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+
+```json
 {
   "mcpServers": {
-    "trader-soul": {
+    "sui-trader": {
       "command": "node",
       "args": ["dist/mcp/server.js"],
-      "env": {
-        "SUI_RPC_URL": "https://fullnode.mainnet.sui.io:443"
-      }
+      "cwd": "/path/to/aitrader"
     }
   }
 }
 ```
 
-## 📊 Demo Usage
+Restart Claude Desktop and test with natural language commands.
 
-1. **Link Wallet**: Connect your Sui wallet(s)
-2. **Historical Analysis**: System analyzes your past trades on Cetus/Aftermath
-3. **Pattern Discovery**: Identifies your trading playbooks and risk preferences
-4. **Claude Integration**: Ask Claude about your trading style
-5. **Get Recommendations**: "Claude, what should I trade today based on my history?"
+## Available MCP Tools
 
-## 🎯 Hackathon Goals
+| Tool | Function | Usage |
+|------|----------|-------|
+| `cetus.get_swap_history` | Retrieve raw trading data | Historical transaction analysis |
+| `cetus.get_trading_patterns` | AI analysis with storage | Behavioral pattern discovery |
+| `cetus.recommend_swaps` | Generate trading suggestions | AI-driven recommendations |
+| `cetus.execute_trade` | Automated trade execution | Transaction processing |
+| `cetus.get_cached_analysis` | Historical insight access | Long-term pattern analysis |
 
-- [x] Sui event indexing for major DEXes
-- [ ] Trading pattern recognition ML
-- [ ] Walrus storage integration
-- [ ] MCP provider implementation
-- [ ] Claude/GPT integration demo
-- [ ] Basic web interface
-- [ ] Live recommendation engine
+## Network Configuration
 
-## 🔮 Future Roadmap
+**Environment Variables:**
 
-- Cross-chain analysis (Ethereum, Solana)
-- Advanced ML models (transformer-based)
-- Portfolio optimization suggestions
-- Social trading features
-- Mobile app
+```bash
+# Explicit network selection
+SUI_NETWORK=testnet
 
-## 🤝 Contributing
+# RPC endpoint configuration
+SUI_RPC_URL=https://fullnode.testnet.sui.io:443
 
-Built for Sui-mming Hackathon 2025. Open to collaboration and feedback!
+# Protocol overrides
+CETUS_PACKAGE_ID=0x1eabed72c53feb3805120a081dc15963c204dc8d091542592abaf7a35689b2fb
+```
 
-## 📄 License
+**Supported Networks:**
+- Testnet (development and testing)
+- Mainnet (production deployment)
+- Devnet (experimental features)
+- Localnet (local development)
 
-MIT License - see LICENSE file for details.
+## Cost Structure
+
+**Storage Operations:**
+- Analysis storage: 1-2 WAL per analysis (10 epochs)
+- Transaction fees: 0.01-0.02 SUI per operation
+- Optimisation: Smart caching reduces redundant storage
+
+**Trade Execution:**
+- Gas fees: 0.01-0.02 SUI per transaction
+- Slippage protection: 3% default (configurable)
+- Direct protocol integration (no platform fees)
+
+## Use Cases
+
+### Personal Trading Analysis
+Comprehensive analysis of individual trading behaviour with persistent storage and historical tracking.
+
+### Automated Trade Execution
+Natural language trading commands with intelligent recommendation generation and automated execution.
+
+### Research and Strategy Development
+Institutional-grade analysis tools for trading strategy research and backtesting capabilities.
+
+### Portfolio Management
+Advanced analytics for portfolio optimisation and risk management across multiple timeframes.
+
+## Production Deployment
+
+**Infrastructure Requirements:**
+- Multi-network configuration support
+- Persistent storage with Walrus integration
+- Automated failover and error recovery
+- Comprehensive logging and monitoring
+
+**Security Considerations:**
+- Private key management and rotation
+- Transaction validation and verification
+- Network isolation and access controls
+- Audit logging for all operations
+
+## Development Status
+
+**Completed Features:**
+- Multi-network configuration and deployment
+- Walrus storage integration with optimisation
+- Trade execution with safety mechanisms
+- Comprehensive error handling
+- Production-ready configuration management
+
+**Future Development:**
+- Advanced ML models for enhanced pattern recognition
+- Additional DEX protocol integrations
+- Cross-chain analysis capabilities
+- Enhanced risk management features
+
+## Contributing
+
+This project was developed for the Sui-mming Hackathon 2025. Contributions are welcome in the following areas:
+
+- Machine learning model development
+- Additional protocol integrations
+- User interface development
+- Performance optimisation
+
+## License
+
+MIT License - see LICENSE file for complete terms.
 
 ---
 
-*"Every wallet deserves a memory. Every trader deserves personalized intelligence."*
+**Project Vision**: Building the next generation of AI-powered trading infrastructure that combines blockchain technology, decentralised storage, and artificial intelligence to create autonomous trading systems with persistent memory and natural language interaction capabilities.
