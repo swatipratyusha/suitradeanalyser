@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "trader-soul": {
+      "command": "node",
+      "args": ["dist/mcp/server.js"],
+      "cwd": "/Users/swatipratyusha/Documents/official/ladder/Sui-mming 2025/aitrader",
+      "env": {}
+    }
+  }
+}
