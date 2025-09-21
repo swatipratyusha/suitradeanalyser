@@ -29,8 +29,8 @@ export const NETWORK_CONFIGS: Record<SuiNetwork, NetworkConfig> = {
     name: 'testnet',
     rpcUrl: 'https://fullnode.testnet.sui.io:443',
     walrusNetwork: 'testnet',
-    cetusPackageId: '0x2918cf39850de6d5d94d8196dc878c8c722cd79db659318e00bff57fbb4e2ede', // Testnet integration package (has router)
-    cetusGlobalConfig: '0xf5ff7d5ba73b581bca6b4b9fa0049cd320360abd154b809f8700a8fd3cfaf7ca', // Testnet cetus_config
+    cetusPackageId: '0x0c7ae833c220aa73a3643a0d508afa4ac5d50d97312ea4584e35f9eb21b9df12', // Official testnet clmm_pool package
+    cetusGlobalConfig: '0xf5ff7d5ba73b581bca6b4b9fa0049cd320360abd154b809f8700a8fd3cfaf7ca', // Official testnet cetus_config
     commonTokens: {
       SUI: '0x2::sui::SUI',
       USDC: '0x5d4b302506645c37ff133b98c4b50a5ae14841659738d6d733d59d0d217a93bf::coin::COIN',

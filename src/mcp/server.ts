@@ -819,13 +819,22 @@ class SuiClientWrapper {
   }
 
   async getCetusSwapEvents(cursor: any = null, limit: number = 50): Promise<EventQueryResult> {
-    // Query for swap events from all known Cetus package IDs
-    const cetusPackageIds = [
-      '0x1eabed72c53feb3805120a081dc15963c204dc8d091542592abaf7a35689b2fb', // Main Cetus package
-      '0x47a7b90756fba96fe649c2aaa10ec60dec6b8cb8545573d621310072721133aa', // Cetus module
-      '0xb2db7142fa83210a7d78d9c12ac49c043b3cbbd482224fea6e3da00aa5a5ae2d', // Router module
-      '0x2d25c227be42b1748f916493e36f61f3b8f42664a0f709e55d4e6887570010c8', // Cetus module
-      '0xafff5502633f670a64328813b66fa08bc7a642ac9c81ed6c4b7ec5448e3b23ad'  // Router module
+    // Query for swap events from official Cetus package IDs (network-specific)
+    const network = (process.env.NETWORK as SuiNetwork) || 'mainnet';
+    
+    const cetusPackageIds = network === 'testnet' ? [
+      // Official testnet package IDs
+      '0x2918cf39850de6d5d94d8196dc878c8c722cd79db659318e00bff57fbb4e2ede', // integrate - Main testnet package
+      '0x0c7ae833c220aa73a3643a0d508afa4ac5d50d97312ea4584e35f9eb21b9df12', // clmm_pool - Testnet CLMM package
+      '0xf5ff7d5ba73b581bca6b4b9fa0049cd320360abd154b809f8700a8fd3cfaf7ca'  // cetus_config - Testnet config package
+    ] : [
+      // Official mainnet package IDs
+      '0x1eabed72c53feb3805120a081dc15963c204dc8d091542592abaf7a35689b2fb', // clmm_pool - Mainnet CLMM package
+      '0x996c4d9480708fb8b92aa7acf819fb0497b5ec8e65ba06601cae2fb6db3312c3', // integrate - Mainnet integration package
+      '0x95b8d278b876cae22206131fb9724f701c9444515813042f54f0a426c9a3bc2f', // cetus_config - Mainnet config package
+      // Keep some legacy package IDs for historical swap events
+      '0x47a7b90756fba96fe649c2aaa10ec60dec6b8cb8545573d621310072721133aa', // Legacy Cetus module
+      '0xb2db7142fa83210a7d78d9c12ac49c043b3cbbd482224fea6e3da00aa5a5ae2d'  // Legacy Router module
     ];
 
     const allSwaps: any[] = [];
@@ -868,30 +877,44 @@ class SuiClientWrapper {
     const allSwaps: SwapEvent[] = [];
     let cursor: any = null;
     let totalEventsFetched = 0;
-    const maxEventsToFetch = limit * 10; // Fetch up to 10x more events to find enough wallet-specific swaps
+    const maxEventsToFetch = limit * 5; // Fetch up to 5x more events to find enough wallet-specific swaps
 
-    // Fetching swap events for wallet
-
+    // Query by wallet first, then filter by swap event types
     while (allSwaps.length < limit && totalEventsFetched < maxEventsToFetch) {
       const batchSize = Math.min(50, maxEventsToFetch - totalEventsFetched);
 
       try {
-        const result = await this.getCetusSwapEvents(cursor, batchSize);
+        // Query for ALL events from this wallet
+        const params = [
+          {
+            "Sender": walletAddress
+          },
+          cursor,
+          batchSize
+        ];
+
+        const result = await this.rpcCall<EventQueryResult>('suix_queryEvents', params);
 
         if (!result.data || result.data.length === 0) {
           break;
         }
 
-        // Filter events by sender (wallet address)
-        const walletSwaps = result.data
-          .filter(event => event.sender === walletAddress)
-          .map(event => this.parseSwapEvent(event));
+        // Filter for Cetus swap events only
+        const swapEvents = result.data.filter(event => {
+          const eventType = event.type;
+          return (
+            // Official Cetus package IDs
+            eventType.includes('0x1eabed72c53feb3805120a081dc15963c204dc8d091542592abaf7a35689b2fb::pool::SwapEvent') ||
+            eventType.includes('0x996c4d9480708fb8b92aa7acf819fb0497b5ec8e65ba06601cae2fb6db3312c3::pool::SwapEvent') ||
+            eventType.includes('0x95b8d278b876cae22206131fb9724f701c9444515813042f54f0a426c9a3bc2f::pool::SwapEvent')
+          );
+        });
 
-        allSwaps.push(...walletSwaps);
+        // Parse the swap events
+        const parsedSwaps = swapEvents.map(event => this.parseSwapEvent(event));
+        allSwaps.push(...parsedSwaps);
         totalEventsFetched += result.data.length;
         cursor = result.nextCursor;
-
-        // Found swaps in batch
 
         if (!cursor || !result.hasNextPage) {
           break;
@@ -906,7 +929,8 @@ class SuiClientWrapper {
       }
     }
 
-    // Total swaps found for wallet
+    // Sort by timestamp (newest first) and limit
+    allSwaps.sort((a, b) => b.timestamp - a.timestamp);
     return allSwaps.slice(0, limit);
   }
 
@@ -1160,30 +1184,45 @@ class SuiClientInstance {
   async getSwapEventsForWallet(walletAddress: string, limit: number = 100): Promise<SwapEvent[]> {
     const allSwaps: SwapEvent[] = [];
     let cursor: any = null;
-    let fetched = 0;
+    let totalEventsFetched = 0;
+    const maxEventsToFetch = limit * 5; // Fetch up to 5x more events to find enough wallet-specific swaps
 
-    // Fetching swap events for wallet
-
-    while (fetched < limit) {
-      const batchSize = Math.min(50, limit - fetched);
+    // Query by wallet first, then filter by swap event types
+    while (allSwaps.length < limit && totalEventsFetched < maxEventsToFetch) {
+      const batchSize = Math.min(50, maxEventsToFetch - totalEventsFetched);
 
       try {
-        const result = await this.getCetusSwapEvents(cursor, batchSize);
+        // Query for ALL events from this wallet
+        const params = [
+          {
+            "Sender": walletAddress
+          },
+          cursor,
+          batchSize
+        ];
+
+        const result = await this.rpcCall<EventQueryResult>('suix_queryEvents', params);
 
         if (!result.data || result.data.length === 0) {
           break;
         }
 
-        // Filter events by sender (wallet address)
-        const walletSwaps = result.data
-          .filter(event => event.sender === walletAddress)
-          .map(event => this.parseSwapEvent(event));
+        // Filter for Cetus swap events only
+        const swapEvents = result.data.filter(event => {
+          const eventType = event.type;
+          return (
+            // Official Cetus package IDs
+            eventType.includes('0x1eabed72c53feb3805120a081dc15963c204dc8d091542592abaf7a35689b2fb::pool::SwapEvent') ||
+            eventType.includes('0x996c4d9480708fb8b92aa7acf819fb0497b5ec8e65ba06601cae2fb6db3312c3::pool::SwapEvent') ||
+            eventType.includes('0x95b8d278b876cae22206131fb9724f701c9444515813042f54f0a426c9a3bc2f::pool::SwapEvent')
+          );
+        });
 
-        allSwaps.push(...walletSwaps);
-        fetched += result.data.length;
+        // Parse the swap events
+        const parsedSwaps = swapEvents.map(event => this.parseSwapEvent(event));
+        allSwaps.push(...parsedSwaps);
+        totalEventsFetched += result.data.length;
         cursor = result.nextCursor;
-
-        // Found swaps in batch
 
         if (!cursor || !result.hasNextPage) {
           break;
@@ -1198,7 +1237,8 @@ class SuiClientInstance {
       }
     }
 
-    // Total swaps found for wallet
+    // Sort by timestamp (newest first) and limit
+    allSwaps.sort((a, b) => b.timestamp - a.timestamp);
     return allSwaps.slice(0, limit);
   }
 
