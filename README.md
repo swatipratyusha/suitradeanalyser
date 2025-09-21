@@ -34,7 +34,7 @@ An AI-powered personalised trading assistant that analyses Sui blockchain tradin
 - Multi-network support with seamless environment switching (testnet <-> mainnet)
 
 ### Production-ready architecture
-- Multi-network configuration (testnet/mainnet/devnet/localnet)
+- Multi-network configuration (testnet/mainnet)
 - Environment-aware deployment configuration
 - Comprehensive error handling and recovery
 
@@ -209,8 +209,6 @@ CETUS_PACKAGE_ID=0x1eabed72c53feb3805120a081dc15963c204dc8d091542592abaf7a35689b
 **Supported Networks:**
 - Testnet (development and testing)
 - Mainnet (production deployment)
-- Devnet (experimental features)
-- Localnet (local development)
 
 ## Cost Structure
 

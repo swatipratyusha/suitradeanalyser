@@ -24,7 +24,7 @@ import BN from 'bn.js';
 import fetch from 'node-fetch';
 
 // Inlined Types from config/networks.ts
-export type SuiNetwork = 'testnet' | 'mainnet' | 'devnet' | 'localnet';
+export type SuiNetwork = 'testnet' | 'mainnet';
 
 export interface NetworkConfig {
   name: SuiNetwork;
@@ -74,36 +74,6 @@ function getNetworkConfig(): NetworkConfig {
       name: 'mainnet',
       rpcUrl: 'https://fullnode.mainnet.sui.io:443',
       walrusNetwork: 'mainnet',
-      cetusPackageId: '0x1eabed72c53feb3805120a081dc15963c204dc8d091542592abaf7a35689b2fb',
-      cetusGlobalConfig: '0x1eabed72c53feb3805120a081dc15963c204dc8d091542592abaf7a35689b2fb',
-      commonTokens: {
-        SUI: '0x2::sui::SUI',
-        USDC: '0x5d4b302506645c37ff133b98c4b50a5ae14841659738d6d733d59d0d217a93bf::coin::COIN',
-        USDT: '0xaf8cd5edc19c4512f4259f0bee101a40d41ebd73820c7d13cfcda0cd0cf3e3e6::coin::COIN',
-        CETUS: '0x06864a6f921804860930db6ddbe2e16acdf8504495ea7481637a1c8b9a8fe54b::cetus::CETUS',
-        DEEP: '0x000000000000000000000000000000000000000000000000000000000000dee9::deep::DEEP',
-        WAL: '0x000000000000000000000000000000000000000000000000000000000000wal::wal::WAL',
-      },
-    },
-    devnet: {
-      name: 'devnet',
-      rpcUrl: 'https://fullnode.devnet.sui.io:443',
-      walrusNetwork: 'testnet',
-      cetusPackageId: '0x1eabed72c53feb3805120a081dc15963c204dc8d091542592abaf7a35689b2fb',
-      cetusGlobalConfig: '0x1eabed72c53feb3805120a081dc15963c204dc8d091542592abaf7a35689b2fb',
-      commonTokens: {
-        SUI: '0x2::sui::SUI',
-        USDC: '0x5d4b302506645c37ff133b98c4b50a5ae14841659738d6d733d59d0d217a93bf::coin::COIN',
-        USDT: '0xaf8cd5edc19c4512f4259f0bee101a40d41ebd73820c7d13cfcda0cd0cf3e3e6::coin::COIN',
-        CETUS: '0x06864a6f921804860930db6ddbe2e16acdf8504495ea7481637a1c8b9a8fe54b::cetus::CETUS',
-        DEEP: '0x000000000000000000000000000000000000000000000000000000000000dee9::deep::DEEP',
-        WAL: '0x000000000000000000000000000000000000000000000000000000000000wal::wal::WAL',
-      },
-    },
-    localnet: {
-      name: 'localnet',
-      rpcUrl: 'http://localhost:9000',
-      walrusNetwork: 'testnet',
       cetusPackageId: '0x1eabed72c53feb3805120a081dc15963c204dc8d091542592abaf7a35689b2fb',
       cetusGlobalConfig: '0x1eabed72c53feb3805120a081dc15963c204dc8d091542592abaf7a35689b2fb',
       commonTokens: {
