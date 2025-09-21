@@ -75,30 +75,12 @@ aitrader/
 ├── src/
 │   ├── config/
 │   │   └── networks.ts            # Multi-network configuration
-│   ├── sui/
-│   │   └── client.ts              # Sui RPC integration
-│   ├── analysis/
-│   │   ├── statistics.ts          # Mathematical analysis functions
-│   │   ├── token-utils.ts         # Token and pool analysis
-│   │   └── patterns.ts            # Trading pattern analyser
-│   ├── storage/
-│   │   ├── schema.ts              # Walrus storage schemas
-│   │   └── walrus-client.ts       # Walrus integration
-│   ├── execution/
-│   │   ├── types.ts               # Trade execution interfaces
-│   │   ├── safety-checker.ts      # Risk management
-│   │   └── trade-executor.ts      # Cetus DEX integration
-│   ├── mcp/
-│   │   ├── server.ts              # MCP server implementation
-│   │   └── tools/                 # Individual tool modules
-│   ├── memory/                    # Advanced memory systems
-│   └── recommender/               # AI recommendation engine
-├── scripts/
-│   ├── generate-keypair.js        # Keypair generation utility
-│   ├── test-walrus-storage.ts     # Storage integration testing
-│   └── check-network-config.js    # Network configuration validation
+│   └── mcp/
+│       └── server.ts              # MCP server with integrated functionality
 ├── docs/
 │   └── WALRUS_STORAGE.md          # Walrus integration documentation
+├── claude-mcp-config.json         # MCP server configuration
+├── .env.example                   # Environment configuration template
 └── dist/                          # Compiled output
 ```
 
@@ -153,14 +135,11 @@ Request tokens from hackathon organisers or use official faucets.
 ### Component Testing
 
 ```bash
-# Test Walrus storage integration
-npm run test:walrus
+# Build the project
+npm run build
 
-# Validate network configuration
-npm run list:networks
-
-# Start MCP server
-npm run dev:mcp
+# Start MCP server (for testing)
+node dist/mcp/server.js
 ```
 
 ### Claude Desktop Integration
@@ -170,10 +149,15 @@ Add configuration to `~/Library/Application Support/Claude/claude_desktop_config
 ```json
 {
   "mcpServers": {
-    "sui-trader": {
+    "trader-soul": {
       "command": "node",
-      "args": ["dist/mcp/server.js"],
-      "cwd": "/path/to/aitrader"
+      "args": ["/path/to/aitrader/dist/mcp/server.js"],
+      "cwd": "/path/to/aitrader",
+      "env": {
+        "NETWORK": "testnet",
+        "BUILDER_PRIVATE_KEY": "your_builder_private_key_here",
+        "DEMO_PRIVATE_KEY": "your_user_private_key_here"
+      }
     }
   }
 }
@@ -185,25 +169,35 @@ Restart Claude Desktop and test with natural language commands.
 
 | Tool | Function | Usage |
 |------|----------|-------|
-| `cetus.get_swap_history` | Retrieve raw trading data | Historical transaction analysis |
-| `cetus.get_trading_patterns` | AI analysis with storage | Behavioral pattern discovery |
-| `cetus.recommend_swaps` | Generate trading suggestions | AI-driven recommendations |
-| `cetus.execute_trade` | Automated trade execution | Transaction processing |
-| `cetus.get_cached_analysis` | Historical insight access | Long-term pattern analysis |
+| `cetus_get_swap_history` | Retrieve raw trading data | Historical transaction analysis |
+| `cetus_get_trading_patterns` | AI analysis with storage | Behavioral pattern discovery |
+| `cetus_recommend_swaps` | Generate trading suggestions | AI-driven recommendations |
+| `cetus_execute_trade` | Automated trade execution | Transaction processing |
+| `cetus_get_cached_analysis` | Historical insight access | Long-term pattern analysis |
+| `cetus_get_token_prices` | Real-time price data | Token price information |
+| `cetus_get_active_pools` | Pool discovery | Active trading pools |
+| `sui_get_balance` | Wallet balance check | Token balance queries |
+| `sui_get_all_balances` | Complete balance overview | All token balances |
+| `analysis_analyze_trading_patterns` | Pattern analysis | Trading behavior analysis |
 
 ## Network Configuration
 
 **Environment Variables:**
 
 ```bash
-# Explicit network selection
-SUI_NETWORK=testnet
+# Network selection
+NETWORK=testnet
 
 # RPC endpoint configuration
 SUI_RPC_URL=https://fullnode.testnet.sui.io:443
 
-# Protocol overrides
-CETUS_PACKAGE_ID=0x1eabed72c53feb3805120a081dc15963c204dc8d091542592abaf7a35689b2fb
+# Private keys for functionality
+BUILDER_PRIVATE_KEY=your_builder_private_key_here
+DEMO_PRIVATE_KEY=your_user_private_key_here
+
+# Walrus storage configuration
+WALRUS_PUBLISHER_URL=https://publisher.walrus-testnet.walrus.space
+WALRUS_AGGREGATOR_URL=https://aggregator.walrus-testnet.walrus.space
 ```
 
 **Supported Networks:**
@@ -261,6 +255,7 @@ Advanced analytics for portfolio optimisation and risk management across multipl
 
 **Future Development:**
 - Advanced ML models for enhanced pattern recognition
+- Custom Move smart contracts with enhanced slippage protection
 - Additional DEX protocol integrations
 - Cross-chain analysis capabilities
 - Enhanced risk management features
