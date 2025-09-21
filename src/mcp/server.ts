@@ -343,11 +343,7 @@ function convertToSuiEquivalent(amount: string, tokenSymbol: string): number {
 
 function getTokensFromPoolSync(poolId: string): string[] {
   // This function is deprecated - use dynamic pool discovery instead
-  console.log(JSON.stringify({
-    type: 'deprecated_function_warning',
-    function: 'getTokensFromPoolSync',
-    message: 'This function uses hardcoded pools and should not be used'
-  }));
+  // Deprecated function warning - getTokensFromPoolSync
   return ['UNKNOWN', 'UNKNOWN'];
 }
 
@@ -854,11 +850,7 @@ class SuiClientWrapper {
         }
       } catch (error) {
         // Continue with other packages if one fails
-        console.log(JSON.stringify({
-          type: 'package_query_error',
-          packageId,
-          error: error instanceof Error ? error.message : String(error)
-        }));
+        // Package query error - continuing with other packages
       }
     }
 
@@ -1598,22 +1590,12 @@ if (process.env.BUILDER_PRIVATE_KEY) {
   try {
     builderKeypair = Ed25519Keypair.fromSecretKey(process.env.BUILDER_PRIVATE_KEY);
     storage.setKeypair(builderKeypair);
-    console.log(JSON.stringify({
-      type: 'system_initialization',
-      message: 'Builder keypair initialized for system operations (storage, caching)'
-    }));
+    // Builder keypair initialized for system operations
   } catch (error) {
-    console.log(JSON.stringify({
-      type: 'system_initialization_error',
-      message: 'Failed to initialize builder keypair, storage will be read-only',
-      error: error instanceof Error ? error.message : String(error)
-    }));
+    // Failed to initialize builder keypair, storage will be read-only
   }
 } else {
-  console.log(JSON.stringify({
-    type: 'system_initialization_warning',
-    message: 'No BUILDER_PRIVATE_KEY found, storage will be read-only'
-  }));
+  // No BUILDER_PRIVATE_KEY found, storage will be read-only
 }
 
 // Initialize user keypair for trade execution only
@@ -1621,22 +1603,12 @@ if (process.env.DEMO_PRIVATE_KEY) {
   try {
     userKeypair = Ed25519Keypair.fromSecretKey(process.env.DEMO_PRIVATE_KEY);
     tradeExecutor = new SimpleTradeExecutor(suiClient, userKeypair, networkConfig);
-    console.log(JSON.stringify({
-      type: 'trade_execution_initialization',
-      message: 'User keypair initialized for trade execution'
-    }));
+    // User keypair initialized for trade execution
   } catch (error) {
-    console.log(JSON.stringify({
-      type: 'trade_execution_initialization_error',
-      message: 'Failed to initialize user keypair, trade execution will be unavailable',
-      error: error instanceof Error ? error.message : String(error)
-    }));
+    // Failed to initialize user keypair, trade execution will be unavailable
   }
 } else {
-  console.log(JSON.stringify({
-    type: 'trade_execution_initialization_warning',
-    message: 'No DEMO_PRIVATE_KEY found, trade execution will be unavailable'
-  }));
+  // No DEMO_PRIVATE_KEY found, trade execution will be unavailable
 }
 
 // Create server instance
