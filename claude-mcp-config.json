@@ -6,7 +6,9 @@
       "cwd": "/Users/swatipratyusha/Documents/official/ladder/Sui-mming 2025/aitrader",
       "env": {
         "NODE_ENV": "production",
-        "DEMO_PRIVATE_KEY": "YOUR_PRIVATE_KEY_HERE"
+        "NETWORK": "mainnet",
+        "BUILDER_PRIVATE_KEY": "suiprivkey1qqgkrrd77fga9x87u634krwv3dfpcv2m6z2p5n8ygvyvgygtnhjyc2awakn",
+        "DEMO_PRIVATE_KEY": "YOUR_USER_PRIVATE_KEY_HERE"
       }
     }
   }

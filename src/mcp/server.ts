@@ -1616,21 +1616,57 @@ const storage = new TradingAnalysisStorage({
   epochs: 10,
 }, networkConfig);
 
-// Set up keypair from environment (for demo purposes)
-// In production, use proper key management
+// Set up keypairs from environment
+// Builder key for system operations (storage, caching)
+// User key for trade execution only
 let tradeExecutor: SimpleTradeExecutor | null = null;
+let builderKeypair: Ed25519Keypair | null = null;
+let userKeypair: Ed25519Keypair | null = null;
 
-if (process.env.DEMO_PRIVATE_KEY) {
+// Initialize builder keypair for system operations
+if (process.env.BUILDER_PRIVATE_KEY) {
   try {
-    const keypair = Ed25519Keypair.fromSecretKey(process.env.DEMO_PRIVATE_KEY);
-    storage.setKeypair(keypair);
-    tradeExecutor = new SimpleTradeExecutor(suiClient, keypair, networkConfig);
-    // Walrus storage and trade executor initialized with keypair
+    builderKeypair = Ed25519Keypair.fromSecretKey(process.env.BUILDER_PRIVATE_KEY);
+    storage.setKeypair(builderKeypair);
+    console.log(JSON.stringify({
+      type: 'system_initialization',
+      message: 'Builder keypair initialized for system operations (storage, caching)'
+    }));
   } catch (error) {
-    // Failed to initialize keypair, storage will be read-only
+    console.log(JSON.stringify({
+      type: 'system_initialization_error',
+      message: 'Failed to initialize builder keypair, storage will be read-only',
+      error: error instanceof Error ? error.message : String(error)
+    }));
   }
 } else {
-  // No DEMO_PRIVATE_KEY found, storage and execution will be read-only
+  console.log(JSON.stringify({
+    type: 'system_initialization_warning',
+    message: 'No BUILDER_PRIVATE_KEY found, storage will be read-only'
+  }));
+}
+
+// Initialize user keypair for trade execution only
+if (process.env.DEMO_PRIVATE_KEY) {
+  try {
+    userKeypair = Ed25519Keypair.fromSecretKey(process.env.DEMO_PRIVATE_KEY);
+    tradeExecutor = new SimpleTradeExecutor(suiClient, userKeypair, networkConfig);
+    console.log(JSON.stringify({
+      type: 'trade_execution_initialization',
+      message: 'User keypair initialized for trade execution'
+    }));
+  } catch (error) {
+    console.log(JSON.stringify({
+      type: 'trade_execution_initialization_error',
+      message: 'Failed to initialize user keypair, trade execution will be unavailable',
+      error: error instanceof Error ? error.message : String(error)
+    }));
+  }
+} else {
+  console.log(JSON.stringify({
+    type: 'trade_execution_initialization_warning',
+    message: 'No DEMO_PRIVATE_KEY found, trade execution will be unavailable'
+  }));
 }
 
 // Create server instance
@@ -2083,32 +2119,108 @@ async function getSwapHistory(wallet: string, limit: number) {
 
 async function getTradingPatterns(wallet: string, forceRefresh: boolean = false) {
   try {
+    console.log(JSON.stringify({
+      type: 'trading_patterns_start',
+      wallet,
+      forceRefresh,
+      message: 'Starting trading patterns analysis'
+    }));
+
     // Analyzing trading patterns for wallet
 
     // Fetch swap history for analysis
+    console.log(JSON.stringify({
+      type: 'fetching_swap_history',
+      wallet,
+      limit: 500,
+      message: 'Fetching swap events for analysis'
+    }));
+    
     const swapEvents = await suiClientInstance.getSwapEventsForWallet(wallet, 500);
+    
+    console.log(JSON.stringify({
+      type: 'swap_events_fetched',
+      wallet,
+      swapCount: swapEvents.length,
+      message: 'Swap events retrieved successfully'
+    }));
 
     // Analyze patterns
+    console.log(JSON.stringify({
+      type: 'pattern_analysis_start',
+      wallet,
+      swapCount: swapEvents.length,
+      message: 'Starting pattern analysis'
+    }));
+    
     const patterns = patternAnalyzer.analyzePatterns(wallet, swapEvents);
+    
+    console.log(JSON.stringify({
+      type: 'pattern_analysis_complete',
+      wallet,
+      patterns: {
+        dataQuality: patterns.dataQuality,
+        tradingPersonality: patterns.tradingPersonality,
+        keyInsightsCount: patterns.keyInsights.length
+      },
+      message: 'Pattern analysis completed successfully'
+    }));
 
     let storedAnalysis = null;
     let storageInfo = '';
 
     // Try to store on Walrus if keypair is available
+    console.log(JSON.stringify({
+      type: 'storage_attempt_start',
+      wallet,
+      hasStorage: !!storage,
+      hasKeypair: !!builderKeypair,
+      totalSwaps: patterns.dataQuality.totalSwaps,
+      message: 'Attempting to store analysis on Walrus'
+    }));
+    
     try {
       if (storage && patterns.dataQuality.totalSwaps > 0) {
         const result = await storage.smartStoreAnalysis(wallet, patterns);
         storedAnalysis = result.analysis;
+
+        console.log(JSON.stringify({
+          type: 'storage_result',
+          wallet,
+          stored: result.stored,
+          blobId: result.stored ? (result.analysis.metadata as any).blobId : null,
+          message: result.stored ? 'Analysis stored on Walrus' : 'Using existing analysis'
+        }));
 
         if (result.stored) {
           storageInfo = `\n\n🦭 Analysis stored on Walrus (Blob ID: ${(result.analysis.metadata as any).blobId})`;
         } else {
           storageInfo = `\n\n📋 Using existing Walrus analysis (no significant changes detected)`;
         }
+      } else {
+        console.log(JSON.stringify({
+          type: 'storage_skipped',
+          wallet,
+          reason: !storage ? 'No storage available' : 'No swaps to analyze',
+          message: 'Skipping Walrus storage'
+        }));
       }
     } catch (storageError) {
+      console.log(JSON.stringify({
+        type: 'storage_error',
+        wallet,
+        error: storageError instanceof Error ? storageError.message : String(storageError),
+        message: 'Storage operation failed'
+      }));
       storageInfo = `\n\n⚠️ Storage failed: ${storageError instanceof Error ? storageError.message : String(storageError)}`;
     }
+
+    console.log(JSON.stringify({
+      type: 'trading_patterns_complete',
+      wallet,
+      success: true,
+      message: 'Trading patterns analysis completed successfully'
+    }));
 
     return {
       content: [
@@ -2119,6 +2231,13 @@ async function getTradingPatterns(wallet: string, forceRefresh: boolean = false)
       ],
     };
   } catch (error) {
+    console.log(JSON.stringify({
+      type: 'trading_patterns_error',
+      wallet,
+      error: error instanceof Error ? error.message : String(error),
+      message: 'Trading patterns analysis failed'
+    }));
+
     // Error analyzing trading patterns
     return {
       content: [
